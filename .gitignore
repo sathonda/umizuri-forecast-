@@ -1,0 +1,7 @@
+html_cache/
+__pycache__/
+*.pyc
+umizuri_catch.bak.csv
+forecast_map_*.html
+forecast_week_*.html
+site/

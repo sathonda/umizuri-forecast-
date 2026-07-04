@@ -53,9 +53,12 @@ def main():
     run([py, "train_all.py", "umizuri_clean.csv"])
 
     # 4. 週間予報(本日起点16日)を生成
+    #    古い forecast_week_*.html が残っていると取り違えるので、先に消す。
+    for f in glob.glob(os.path.join(HERE, "forecast_week_*.html")):
+        os.remove(f)
     run([py, "predict_week.py", "umizuri_clean.csv"])
 
-    # 5. サイトへ配置
+    # 5. サイトへ配置(今回生成された唯一のHTMLを index.html にする)
     os.makedirs(SITE, exist_ok=True)
     weeks = sorted(glob.glob(os.path.join(HERE, "forecast_week_*.html")))
     if not weeks:

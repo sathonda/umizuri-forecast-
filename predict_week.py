@@ -26,6 +26,13 @@ import lightgbm as lgb
 import auto_conditions as ac
 import predict_map as pm
 
+# 海づり公園は日本にあるので「今日」は常に日本時間で判定する。
+# GitHub Actions などのサーバーは UTC で動くため、date.today() をそのまま使うと
+# 日本の朝に実行しても UTC ではまだ前日で、予報が1日ずれる。これを防ぐ。
+JST = datetime.timezone(datetime.timedelta(hours=9))
+def jst_today():
+    return datetime.datetime.now(JST).date()
+
 LAT, LON = ac.LAT, ac.LON
 SLOTS = pm.SLOTS
 COORDS = pm.COORDS
@@ -66,7 +73,7 @@ def fetch_weather_range(start, end):
     end_date を使う。変数名の綴り違いにも備えて複数パターンを試す。"""
     start_d=datetime.date.fromisoformat(start)
     end_d=datetime.date.fromisoformat(end)
-    today=datetime.date.today()
+    today=jst_today()
     span_days=(end_d-today).days+1   # 本日から終了日までに必要な日数
 
     last_err=None
@@ -130,7 +137,7 @@ def build_conditions_for_day(df, d, wx, base_water):
     m_age=ac.moon_age(d)
     tide=ac.tide_type_from_age(m_age)
     hi,lo=ac.estimate_tides(df,tide,m_age)
-    days_ahead=(d-datetime.date.today()).days
+    days_ahead=(d-jst_today()).days
 
     if wx and wx["air_temp"] is not None:
         air=wx["air_temp"]; wdir=wx["wind_dir"]; wspd=wx["wind_speed"]; weather=wx["weather"]
@@ -218,7 +225,7 @@ def main():
         return
     trained=list(models.keys())
 
-    start=datetime.date.fromisoformat(args.start) if args.start else datetime.date.today()
+    start=datetime.date.fromisoformat(args.start) if args.start else jst_today()
     dates=[start+datetime.timedelta(days=i) for i in range(args.days)]
 
     # 気象をまとめて1回取得(範囲内のぶん)。失敗したら日別取得に切り替え、
@@ -232,7 +239,7 @@ def main():
     except Exception as e:
         print(f"気象の一括取得に失敗({e})。", file=sys.stderr)
         print("→ 日別取得に切り替えて再試行します...", file=sys.stderr)
-        today=datetime.date.today()
+        today=jst_today()
         for d in dates:
             # 予報範囲(本日+16日)内の日だけAPIを叩く。範囲外は気候値に任せる。
             if not (0 <= (d-today).days <= FORECAST_HORIZON_DAYS):

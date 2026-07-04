@@ -24,6 +24,10 @@ except ImportError:
     print("ephem が必要: python -m pip install ephem", file=sys.stderr); raise
 
 LAT, LON = 33.56, 130.23
+# 海づり公園は日本。サーバーが UTC でも「今日」は日本時間で判定する。
+JST = datetime.timezone(datetime.timedelta(hours=9))
+def jst_today():
+    return datetime.datetime.now(JST).date()
 SLOT_CENTER = {'6-9':7.5,'9-12':10.5,'12-15':13.5,'15-18':16.5,'18-20':19.0}
 DIRS16=['北','北北東','北東','東北東','東','東南東','南東','南南東','南','南南西','南西','西南西','西','西北西','北西','北北西']
 WMO={0:'快晴',1:'晴れ',2:'曇り',3:'曇り',45:'曇り',48:'曇り',51:'雨',53:'雨',55:'雨',
@@ -143,7 +147,7 @@ def fetch_recent_water():
 
 def main(clean_csv, date=None):
     if date is None:
-        date=(datetime.date.today()+datetime.timedelta(days=1)).isoformat()
+        date=(jst_today()+datetime.timedelta(days=1)).isoformat()
     d=datetime.date.fromisoformat(date)
     df=pd.read_csv(clean_csv)
 
@@ -152,7 +156,7 @@ def main(clean_csv, date=None):
     hi,lo=estimate_tides(df,tide,m_age)
 
     # 何日先か
-    days_ahead = (d - datetime.date.today()).days
+    days_ahead = (d - jst_today()).days
 
     # 気象(代表として9-12時=昼前の値を全体の代表に。時間帯別は predict 側で気温共通利用)
     weather_note=""
